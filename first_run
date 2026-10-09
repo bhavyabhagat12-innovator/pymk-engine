@@ -1,0 +1,7 @@
+from core.graph import Graph
+from core.recommender import recommend
+
+g = Graph()
+g.load("data/facebook_combined.txt")
+print(g.num_nodes(), g.num_edges())   # expect 4039 88234
+print(recommend(g, 0, k=5))
