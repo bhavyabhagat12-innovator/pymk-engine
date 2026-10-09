@@ -1,0 +1,10 @@
+# use the following command to directly install everything at once
+# pip install -r requirements.txt
+
+fastapi
+uvicorn
+streamlit
+networkx
+plotly
+pandas
+pytest
