@@ -22,7 +22,9 @@ def load_graph():
 g = load_graph()
 
 st.title("People You May Know Engine")
-tab1, tab2, tab3, tab4 = st.tabs(["Recommendations", "Mutual Friends", "Network Stats", "Ego Network"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(
+    ["Recommendations", "Mutual Friends", "Network Stats", "Ego Network", "Performance"]
+)
 
 with tab1:
     c1, c2, c3 = st.columns(3)
@@ -110,3 +112,51 @@ with tab4:
         st.plotly_chart(fig, use_container_width=True)
         st.caption("Red: selected user. Gold: top recommendation. "
                    "Green: mutual friends. Gray: other friends.")
+with tab5:
+    st.subheader("Graph Performance")
+
+    # Load
+    l1, l2, l3 = st.columns(3)
+    l1.metric("Load time", "0.484 s")
+    l2.metric("Peak memory", "15.3 MB")
+    l3.metric("Graph size", "4,039 nodes / 88,234 edges")
+
+    # Query times
+    st.markdown("#### Query times (average per query)")
+    q = pd.DataFrame({
+        "Operation": ["Mutual friends", "Friends-of-friends (BFS depth 2)", "BFS distance (full)"],
+        "Time (ms)": [0.0029, 0.3358, 4.1052],
+    })
+    st.plotly_chart(
+        px.bar(q, x="Operation", y="Time (ms)", text="Time (ms)", log_y=True),
+        use_container_width=True,
+    )
+    st.caption("Log scale: set intersection is orders of magnitude faster than full BFS.")
+
+    # Heuristic speed
+    st.markdown("#### Heuristic speed (top-10 recommendation)")
+    sp = pd.DataFrame({
+        "Heuristic": ["preferential_attachment", "common_neighbors", "adamic_adar", "jaccard"],
+        "Time (ms)": [0.664, 1.365, 2.162, 5.162],
+    })
+    st.plotly_chart(px.bar(sp, x="Heuristic", y="Time (ms)", text="Time (ms)"),
+                    use_container_width=True)
+
+    # Heap vs sort
+    st.markdown("#### Heap Top-K vs full sort (about 690 candidates, K=10)")
+    hs = pd.DataFrame({"Method": ["Heap Top-K", "Full sort"], "Time (ms)": [0.0727, 0.1422]})
+    st.plotly_chart(px.bar(hs, x="Method", y="Time (ms)", text="Time (ms)"),
+                    use_container_width=True)
+
+    # Quality
+    st.markdown("#### Recommendation quality (hide 10% of edges, K=10)")
+    ql = pd.DataFrame({
+        "Heuristic": ["adamic_adar", "common_neighbors", "jaccard", "preferential_attachment"],
+        "Precision@10": [0.2660, 0.2620, 0.2490, 0.0897],
+        "Recall@10": [0.5639, 0.5462, 0.4828, 0.1311],
+    })
+    qm = ql.melt(id_vars="Heuristic", var_name="Metric", value_name="Score")
+    st.plotly_chart(px.bar(qm, x="Heuristic", y="Score", color="Metric", barmode="group"),
+                    use_container_width=True)
+    st.success("Adamic-Adar gives the best quality; preferential attachment is far worse "
+               "because it ignores mutual friends.")
